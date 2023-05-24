@@ -1,0 +1,138 @@
+---
+ - hosts: dev1
+   become: true
+   tasks:
+     - name: server utilization
+       shell: df -hT >> /home/node1/diskspace.txt
+     - fetch:
+         src: /home/node1/diskspace.txt
+         dest: /root/
+         flat: yes
+         remote_src: no
+     - file:
+         path: /home/node1/diskspace.txt
+         state: absent
+     - mail:
+         host: smtp.gmail.com
+         port: 587
+         username: 
+         password: 
+         to: srikar0610@gmail.com, pratibhavikrala97@gmail.com, ramanjaneyulu.galla@gmail.com
+         cc: 
+         subject: testmail
+         headers:
+           - X-Auto-Response-Suppress=All
+           - Reply-To=srikar0610@gmail.com
+         body: "{{ lookup('file', '/root/body.docx') }}"
+         secure: always
+         secure: starttls
+         charset: utf-8
+         attach: /root/diskspace.txt
+       delegate_to: localhost
+	   
+	   
+---
+ - name: Provision instances in AWS
+   hosts: all
+   connection: local
+   gather_facts: False
+   tasks:
+    - name : ec2 instance
+      ec2:
+        access_key: AKIAVPCOWUKACGXB7KVL
+        secret_key: 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
+        key_name: kundarapu1
+        instance_type: t2.micro
+        instance_ids: i-08e4e34dd0868a290
+        image: ami-0a4e0492247630fe1
+        group: default
+        wait: yes
+        count: 3
+        vpc_subnet_id: subnet-00b13510485fa5095
+        region: us-east-2
+        assign_public_ip: yes
+	   
+	   
+---
+ - hosts: localhost
+   become: true
+   tasks:
+     - name: webserver installing on localhost
+       yum:
+         name: httpd
+         state: installed
+     - name: copy content to index
+       copy:
+         src: /root/index.html
+         dest: /var/www/html/
+     - name: start service of apache webserver
+       service:
+         name: httpd
+         state: started
+		 
+		 
+---
+ - hosts: all
+   become: true
+   gather_facts: True
+   tasks:
+     - yum:
+         name: [git,java,wget,unzip]
+         state: installed    
+     - get_url:
+         url: https://mirrors.estointernet.in/apache/tomcat/tomcat-8/v8.5.75/bin/apache-tomcat-8.5.75.zip
+         dest: /root/
+     - get_url:
+         validate_certs: False
+         url: https://mirrors.estointernet.in/apache/tomcat/tomcat-8/v8.5.75/bin/apache-tomcat-8.5.75.zip
+         dest: /root/
+     - unarchive:
+         src: /root/apache-tomcat-8.5.75.zip
+         dest: /root/
+         remote_src: yes  
+     - name: copy user.xml file
+       copy:
+         src: /root/tomcat-user.xml
+         dest: /root/
+         remote_src: no
+     - shell: mv /root/tomcat-user.xml /root/apache-tomcat-8.5.75/conf/tomcat-user.xml
+     - copy:
+         src: /root/context.xml
+         dest: /root/
+         remote_src: no
+     - shell: mv /root/context.xml /root/apache-tomcat-8.5.75/webapps/manager/META-INF/context.xml
+     - shell: chmod 777 /root/apache-tomcat-8.5.75/bin/startup.sh
+     - shell: chmod 777  /root/apache-tomcat-8.5.75/bin/shutdown.sh
+     - shell: chmod 777 /root/apache-tomcat-8.5.75/bin/catalina.sh
+     - shell: nohup sh /root/apache-tomcat-8.5.75/bin/shutdown.sh
+     - shell: nohup sh /root/apache-tomcat-8.5.75/bin/startup.sh
+	 
+	 
+---
+ - hosts: localhost
+   become: true
+   gather_facts: True
+   tasks:
+     - mail:
+         host: smtp.gmail.com
+         port: 587
+         username: devops0610@gmail.com
+         password: 
+         to: srikar0610@gmail.com
+         cc: srikar0610@gmail.com
+         subject: Test mail Automation
+         headers:
+           - X-Auto-Response-Suppress=All
+           - Reply-To=srikar0610@gmail.com
+         body: "{{ lookup('file', '/root/body') }}"
+         secure: always
+         secure: starttls
+         charset: utf-8
+         attach: /root/76_batch.txt
+       delegate_to: localhost
+
+
+
+
+
+	   
