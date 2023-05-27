@@ -1,0 +1,31 @@
+---
+ - hosts: dev1
+   become: true
+   tasks:
+     - name: server utilization
+       shell: df -hT >> /home/node1/diskspace.txt
+     - fetch:
+         src: /home/node1/diskspace.txt
+         dest: /root/
+         flat: yes
+         remote_src: no
+     - file:
+         path: /home/node1/diskspace.txt
+         state: absent
+     - mail:
+         host: smtp.gmail.com
+         port: 587
+         username: 
+         password: 
+         to: srikar0610@gmail.com, pratibhavikrala97@gmail.com, ramanjaneyulu.galla@gmail.com
+         cc: 
+         subject: testmail
+         headers:
+           - X-Auto-Response-Suppress=All
+           - Reply-To=srikar0610@gmail.com
+         body: "{{ lookup('file', '/root/body.docx') }}"
+         secure: always
+         secure: starttls
+         charset: utf-8
+         attach: /root/diskspace.txt
+       delegate_to: localhost
